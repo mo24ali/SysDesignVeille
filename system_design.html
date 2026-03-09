@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design - Architecture Complète</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0f172a;
+            --accent: #06b6d4;
+            --accent-warm: #f59e0b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%);
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .slide.prev {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        /* Slide 1 - Title */
+        .slide-1 {
+            background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #020617 100%);
+        }
+
+        .title-container {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .glitch {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #06b6d4, #8b5cf6, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .vs-badge {
+            display: inline-block;
+            background: var(--gradient-2);
+            color: white;
+            padding: 0.5rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-top: 2rem;
+            transform: rotate(-5deg);
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+        }
+
+        /* Geometric Background */
+        .geo-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0.1;
+        }
+
+        .geo-shape {
+            position: absolute;
+            border: 2px solid var(--accent);
+            animation: rotate 20s linear infinite;
+        }
+
+        .geo-shape:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            animation-duration: 25s;
+        }
+
+        .geo-shape:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            bottom: 20%;
+            right: 15%;
+            animation-duration: 30s;
+            animation-direction: reverse;
+        }
+
+        /* Slide Content Styles */
+        h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.8rem;
+            margin-bottom: 2rem;
+            background: var(--gradient-3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .content-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .concept-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.8rem;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .concept-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .concept-card h3 {
+            color: var(--accent);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .concept-card p, .concept-card ul {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .concept-card ul {
+            padding-left: 1.2rem;
+        }
+
+        .icon {
+            font-size: 2rem;
+        }
+
+        /* Comparison Table */
+        .comparison {
+            display: flex;
+            gap: 2rem;
+            align-items: stretch;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .vs-column {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vs-column::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .vs-column.vertical::before {
+            background: var(--gradient-1);
+        }
+
+        .vs-column.horizontal::before {
+            background: var(--gradient-2);
+        }
+
+        .vs-column h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .vs-column.vertical h3 { color: #667eea; }
+        .vs-column.horizontal h3 { color: #f5576c; }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-muted);
+        }
+
+        .feature-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        /* Techniques Grid */
+        .techniques-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.2rem;
+            max-width: 1200px;
+        }
+
+        .tech-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.2rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .tech-card:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .tech-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-card h4 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .tech-card p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Case Study */
+        .case-study {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid var(--accent);
+            padding: 2rem;
+            border-radius: 0 20px 20px 0;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .case-study h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            min-width: 120px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Navigation */
+        .nav-controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text);
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .slide-counter {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+            margin: 0 1rem;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--gradient-3);
+            transition: width 0.3s;
+            z-index: 1001;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #a5b4fc;
+            margin-top: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .highlight {
+            color: #f59e0b;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .glitch { font-size: 3rem; }
+            .content-grid, .content-grid-3, .techniques-grid { grid-template-columns: 1fr; }
+            .comparison { flex-direction: column; }
+            h2 { font-size: 2rem; }
+            .slide { padding: 2rem; }
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 0.25rem 1rem;
+            border-radius: 50px;
+            background: rgba(6,182,212,0.2);
+            color: var(--accent);
+            font-size: 0.9rem;
+            border: 1px solid rgba(6,182,212,0.5);
+            margin: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+    
+    <div class="presentation">
+        <!-- SLIDE 1: INTRODUCTION TO SYSTEM DESIGN -->
+        <div class="slide active slide-1">
+            <div class="geo-bg">
+                <div class="geo-shape"></div>
+                <div class="geo-shape"></div>
+            </div>
+            <div class="glow"></div>
+            <div class="title-container">
+                <h1 class="glitch">System Design</h1>
+                <div class="subtitle">Architecture & Conception</div>
+                <div class="vs-badge">Performance vs Scalabilité</div>
+                <p style="margin-top: 2rem; color: var(--text-muted); max-width: 700px; line-height: 1.6;">
+                    Concevoir des systèmes capables de gérer des millions d'utilisateurs tout en maintenant 
+                    performance, fiabilité et maintenabilité.
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
+                    <span class="pill">Uber</span>
+                    <span class="pill">Instagram</span>
+                    <span class="pill">WhatsApp</span>
+                    <span class="pill">Netflix</span>
+                    <span class="pill">Amazon</span>
+                </div>
+                <div style="margin-top: 3rem; color: var(--text-muted); font-size: 0.9rem;">
+                    <span>✨ Petite application = monolithe</span>
+                    <span style="margin: 0 1rem;">→</span>
+                    <span>🚀 Large échelle = distribution</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: PERFORMANCE VS SCALABILITÉ - DÉFINITIONS -->
+        <div class="slide">
+            <h2>⚡ Performance vs 📈 Scalabilité</h2>
+            <div class="content-grid">
+                <div class="concept-card">
+                    <h3><span class="icon">⚡</span> Performance</h3>
+                    <p><strong>Définition :</strong> Rapidité de traitement d'une requête individuelle.</p>
+                    <ul>
+                        <li>Latence (ms) - temps de réponse</li>
+                        <li>Throughput (req/s) - débit</li>
+                        <li>Utilisation CPU/RAM</li>
+                        <li>Temps d'exécution algorithmique</li>
+                    </ul>
+                    <div class="code-block">
+                        Objectif : minimiser le temps de réponse
+                    </div>
+                </div>
+                <div class="concept-card">
+                    <h3><span class="icon">📈</span> Scalabilité</h3>
+                    <p><strong>Définition :</strong> Capacité à gérer une charge croissante.</p>
+                    <ul>
+                        <li>Ajout de ressources</li>
+                        <li>Distribution de charge</li>
+                        <li>Élasticité</li>
+                        <li>Tolérance aux pannes</li>
+                    </ul>
+                    <div class="code-block">
+                        Objectif : supporter plus d'utilisateurs
+                    </div>
+                </div>
+            </div>
+            <div class="case-study" style="margin-top: 2rem;">
+                <h3>🔄 Complémentarité & Opposition</h3>
+                <p><strong>Complémentarité :</strong> Un système scalable a besoin de composants performants.</p>
+                <p><strong>Opposition :</strong> La distribution (scalabilité) ajoute de la latence réseau, réduisant la performance brute.</p>
+                <div class="metrics">
+                    <div class="metric"><span class="metric-value">1ms</span><span class="metric-label">Cache local</span></div>
+                    <div class="metric"><span class="metric-value">50ms</span><span class="metric-label">Cache distribué</span></div>
+                    <div class="metric"><span class="metric-value">∞</span><span class="metric-label">Scalabilité</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: MONOLITHIC VS MICROSERVICES -->
+        <div class="slide">
+            <h2>🏛️ Monolithic vs Microservices</h2>
+            <div class="comparison">
+                <div class="vs-column vertical">
+                    <h3>🏢 Monolithic</h3>
+                    <p>Une seule application, un seul codebase</p>
+                    <ul class="feature-list">
+                        <li>Démarrage simple</li>
+                        <li>Déploiement unique</li>
+                        <li>Partage mémoire rapide</li>
+                        <li>Difficile à scaler</li>
+                        <li>Couplage fort</li>
+                    </ul>
+                    <div class="code-block">Ex: Amazon (débuts), Shopify (débuts)</div>
+                </div>
+                <div style="display: flex; align-items: center; font-size: 2rem; color: var(--accent);">VS</div>
+                <div class="vs-column horizontal">
+                    <h3>🔧 Microservices</h3>
+                    <p>Services indépendants, communication API</p>
+                    <ul class="feature-list">
+                        <li>Scalabilité indépendante</li>
+                        <li>Déploiement séparé</li>
+                        <li>Isolement des pannes</li>
+                        <li>Complexité réseau</li>
+                        <li>Latence inter-services</li>
+                    </ul>
+                    <div class="code-block">Ex: Netflix, Uber, Amazon (actuel)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: OPTIMISATION DE LA PERFORMANCE -->
+        <div class="slide">
+            <h2>⚡ Optimisation Performance</h2>
+            <div class="techniques-grid">
+                <div class="tech-card">
+                    <div class="tech-icon">💾</div>
+                    <h4>Caching</h4>
+                    <p>Redis, Memcached, CDN</p>
+                    <p>Réduction I/O disque</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🔄</div>
+                    <h4>Async Processing</h4>
+                    <p>Files d'attente, Event-driven</p>
+                    <p>Découplage opérations</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🗜️</div>
+                    <h4>Compression</h4>
+                    <p>Zstd, Brotli, gzip</p>
+                    <p>Réduction bande passante</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">📊</div>
+                    <h4>Indexing</h4>
+                    <p>B-Trees, indexes inversés</p>
+                    <p>Accès O(log n)</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">⚙️</div>
+                    <h4>Connection Pool</h4>
+                    <p>Réutilisation connexions</p>
+                    <p>Réduction overhead TCP</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🚀</div>
+                    <h4>Compilation JIT</h4>
+                    <p>Optimisation runtime</p>
+                    <p>Code natif</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🔍</div>
+                    <h4>Profiling</h4>
+                    <p>Identification goulots</p>
+                    <p>Optimisation ciblée</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">📦</div>
+                    <h4>Lazy Loading</h4>
+                    <p>Chargement différé</p>
+                    <p>Réduction initiale</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: SCALABILITÉ VERTICALE VS HORIZONTALE -->
+        <div class="slide">
+            <h2>📊 Scalabilité: Verticale vs Horizontale</h2>
+            <div class="comparison">
+                <div class="vs-column vertical">
+                    <h3>⬆️ Scale Up (Vertical)</h3>
+                    <p>Augmenter la puissance d'une machine</p>
+                    <ul class="feature-list">
+                        <li>CPU plus rapide</li>
+                        <li>Plus de RAM</li>
+                        <li>SSD NVMe</li>
+                        <li>Limite hardware physique</li>
+                        <li>Point unique de défaillance</li>
+                        <li>Coût exponentiel</li>
+                    </ul>
+                    <div class="code-block">Ex: Base de données SQL unique</div>
+                </div>
+                <div style="font-size: 2rem; color: var(--accent);">VS</div>
+                <div class="vs-column horizontal">
+                    <h3>⬌ Scale Out (Horizontal)</h3>
+                    <p>Ajouter plus de machines</p>
+                    <ul class="feature-list">
+                        <li>Distribution charge</li>
+                        <li>Élasticité cloud</li>
+                        <li>Théoriquement illimité</li>
+                        <li>Haute disponibilité</li>
+                        <li>Complexité réseau</li>
+                        <li>Coût linéaire</li>
+                    </ul>
+                    <div class="code-block">Ex: Google, Amazon, Netflix</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: LOAD BALANCING -->
+        <div class="slide">
+            <h2>⚖️ Load Balancing</h2>
+            <div class="content-grid">
+                <div class="concept-card">
+                    <h3>🎯 Rôle</h3>
+                    <p>Distribuer le trafic entre plusieurs serveurs</p>
+                    <ul>
+                        <li>Éviter la surcharge</li>
+                        <li>Haute disponibilité</li>
+                        <li>Scalabilité horizontale</li>
+                        <li>Failover automatique</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>🛠️ Outils</h3>
+                    <ul>
+                        <li>NGINX</li>
+                        <li>HAProxy</li>
+                        <li>AWS ELB</li>
+                        <li>Traefik</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="case-study" style="margin-top: 2rem;">
+                <h3>Algorithmes de répartition</h3>
+                <div class="techniques-grid" style="grid-template-columns: repeat(3,1fr);">
+                    <div class="tech-card">Round Robin</div>
+                    <div class="tech-card">Least Connections</div>
+                    <div class="tech-card">IP Hash</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: CACHING -->
+        <div class="slide">
+            <h2>💾 Caching Stratégies</h2>
+            <div class="content-grid">
+                <div class="concept-card">
+                    <h3>📦 Types de Cache</h3>
+                    <ul>
+                        <li><strong>In-memory:</strong> Redis, Memcached</li>
+                        <li><strong>CDN:</strong> CloudFlare, Akamai</li>
+                        <li><strong>Database cache:</strong> Buffer pool</li>
+                        <li><strong>Application cache:</strong> Local</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>🎯 Stratégies</h3>
+                    <ul>
+                        <li>Cache-Aside</li>
+                        <li>Write-Through</li>
+                        <li>Write-Behind</li>
+                        <li>Cache Invalidation</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="code-block" style="margin-top: 1rem;">
+                Facebook: cache presque tout (utilisateurs, posts, photos) avec plusieurs couches
+            </div>
+        </div>
+
+        <!-- SLIDE 8: DATABASES - SQL vs NoSQL -->
+        <div class="slide">
+            <h2>🗄️ Gestion des Données</h2>
+            <div class="comparison">
+                <div class="vs-column vertical">
+                    <h3>🔷 SQL</h3>
+                    <p>Relationnel, ACID</p>
+                    <ul class="feature-list">
+                        <li>PostgreSQL</li>
+                        <li>MySQL</li>
+                        <li>Oracle</li>
+                        <li>Cohérence forte</li>
+                        <li>Schéma fixe</li>
+                    </ul>
+                </div>
+                <div class="vs-column horizontal">
+                    <h3>🔶 NoSQL</h3>
+                    <p>Flexible, BASE</p>
+                    <ul class="feature-list">
+                        <li>MongoDB (Document)</li>
+                        <li>Cassandra (Wide-column)</li>
+                        <li>Redis (Key-value)</li>
+                        <li>Neo4j (Graph)</li>
+                        <li>Cohérence éventuelle</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="techniques-grid" style="grid-template-columns: repeat(3,1fr); margin-top: 2rem;">
+                <div class="tech-card"><h4>📋 Réplication</h4><p>Copies pour haute disponibilité</p></div>
+                <div class="tech-card"><h4>🔪 Sharding</h4><p>Partitionnement horizontal</p></div>
+                <div class="tech-card"><h4>🎯 Consistency</h4><p>ACID vs BASE</p></div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: MESSAGING & ASYNCHRONOUS -->
+        <div class="slide">
+            <h2>📨 Messaging & Async</h2>
+            <div class="content-grid">
+                <div class="concept-card">
+                    <h3>📤 Systèmes</h3>
+                    <ul>
+                        <li>Apache Kafka</li>
+                        <li>RabbitMQ</li>
+                        <li>AWS SQS/SNS</li>
+                        <li>Redis Pub/Sub</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>✅ Bénéfices</h3>
+                    <ul>
+                        <li>Découplage services</li>
+                        <li>Background processing</li>
+                        <li>Buffering pics trafic</li>
+                        <li>Fiabilité (persistence)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="case-study" style="margin-top: 2rem;">
+                <h3>Use Case: Traitement commandes</h3>
+                <p>Commande → Kafka → Validation → Paiement → Email (asynchrone)</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: CONTAINERS & DEPLOYMENT -->
+        <div class="slide">
+            <h2>🐳 Containers & Orchestration</h2>
+            <div class="content-grid">
+                <div class="concept-card">
+                    <h3>📦 Docker</h3>
+                    <p>Containerisation: isolation, reproductibilité, légèreté</p>
+                    <ul>
+                        <li>Images immutables</li>
+                        <li>Déploiement rapide</li>
+                        <li>Consistance env</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>☸️ Kubernetes</h3>
+                    <p>Orchestration: scaling auto, rolling updates, service discovery</p>
+                    <ul>
+                        <li>Auto-scaling</li>
+                        <li>Self-healing</li>
+                        <li>Load balancing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: SYSTEM DESIGN EXAMPLES -->
+        <div class="slide">
+            <h2>🎯 Cas Pratiques</h2>
+            <div class="content-grid-3">
+                <div class="concept-card">
+                    <h3>💬 WhatsApp</h3>
+                    <p>Chat temps réel</p>
+                    <ul>
+                        <li>WebSocket pour messages</li>
+                        <li>Database sharding</li>
+                        <li>Cache utilisateurs</li>
+                        <li>Files pour notifications</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>🚗 Uber</h3>
+                    <p>Ride-sharing</p>
+                    <ul>
+                        <li>Geo-indexing (PostGIS)</li>
+                        <li>Matching en temps réel</li>
+                        <li>Microservices</li>
+                        <li>Kafka pour events</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>📺 Netflix</h3>
+                    <p>Streaming vidéo</p>
+                    <ul>
+                        <li>CDN pour contenu</li>
+                        <li>Encoding distribué</li>
+                        <li>Recommendations ML</li>
+                        <li>Chaos engineering</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: CHALLENGES & MONITORING -->
+        <div class="slide">
+            <h2>⚠️ Défis & Monitoring</h2>
+            <div class="content-grid">
+                <div class="concept-card">
+                    <h3>🔴 Défis</h3>
+                    <ul>
+                        <li>Latence réseau</li>
+                        <li>Cohérence données</li>
+                        <li>Tolérance aux pannes</li>
+                        <li>Sécurité</li>
+                        <li>Complexité distribuée</li>
+                    </ul>
+                </div>
+                <div class="concept-card">
+                    <h3>📊 Monitoring</h3>
+                    <ul>
+                        <li>Prometheus (métriques)</li>
+                        <li>Grafana (dashboards)</li>
+                        <li>Jaeger (tracing)</li>
+                        <li>ELK Stack (logs)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="metrics" style="justify-content: center;">
+                <div class="metric"><span class="metric-value">4</span><span class="metric-label">9's (99.99%)</span></div>
+                <div class="metric"><span class="metric-value">P99</span><span class="metric-label">Latence</span></div>
+                <div class="metric"><span class="metric-value">SLA</span><span class="metric-label">Garanties</span></div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: CONCLUSION -->
+        <div class="slide">
+            <h2>🎯 Conclusion</h2>
+            <div class="case-study" style="max-width: 800px;">
+                <h3>Principes clés</h3>
+                <ul style="font-size: 1.2rem; line-height: 2;">
+                    <li>⚡ <strong>Performance:</strong> optimiser localement</li>
+                    <li>📈 <strong>Scalabilité:</strong> penser distribution</li>
+                    <li>⚖️ <strong>Trade-offs:</strong> chaque choix a un coût</li>
+                    <li>🔧 <strong>Outils:</strong> choisir selon besoin</li>
+                    <li>📊 <strong>Monitoring:</strong> mesurer pour améliorer</li>
+                </ul>
+                <p style="margin-top: 2rem; color: var(--accent); font-style: italic;">
+                    "La meilleure architecture évolue avec les besoins"
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="prevSlide()">← Précédent</button>
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">13</span>
+        </div>
+        <button class="nav-btn" onclick="nextSlide()">Suivant →</button>
+    </div>
+
+    <script>
+        // Slide navigation
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function updateSlides() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index === currentSlide) slide.classList.add('active');
+                else if (index < currentSlide) slide.classList.add('prev');
+            });
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+            document.getElementById('progressBar').style.width = ((currentSlide + 1) / totalSlides * 100) + '%';
+        }
+
+        window.nextSlide = function() { 
+            if (currentSlide < totalSlides - 1) { 
+                currentSlide++; 
+                updateSlides(); 
+            } 
+        };
+
+        window.prevSlide = function() { 
+            if (currentSlide > 0) { 
+                currentSlide--; 
+                updateSlides(); 
+            } 
+        };
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // Touch navigation
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        document.addEventListener('touchend', (e) => {
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) nextSlide();
+            else if (touchEndX - touchStartX > 50) prevSlide();
+        });
+
+        // Initial update
+        updateSlides();
+    </script>
+</body>
+</html>
